@@ -3,8 +3,8 @@ import pygame
 class Input:
     def __init__(self, pos: tuple, surface: pygame.surface.Surface, defaultValue: str):
         self.font = pygame.font.Font(None, 24)
-        self.maxLen = 7
-        self.rect = pygame.Rect(pos[0], pos[1], 80, 30)
+        self.rect = pygame.Rect(0, 0, 120, 30)
+        self.rect.center = pos
         self.surface = surface
         self.text = defaultValue
         self.image = self.font.render(self.text, False, "black")
@@ -51,10 +51,10 @@ class Input:
                         self.text = event.unicode
                 else:
                     self.text += event.unicode
-        if len(self.text) > self.maxLen: self.text = self.text[:self.maxLen]
+
         if not(len(self.text)): self.text = "0"
         if not(self.verifyInput()): self.text = "0"
-        if len(self.text) > 1 and (float(self.text) >= 100000 or float(self.text) <= -100000): self.text = "0"
+        if len(self.text) > 1 and (float(self.text) >= 10000000 or float(self.text) <= -10000000): self.text = self.text[:-1]
         self.image = self.font.render(self.text, False, "black")
     
     def getValue(self):

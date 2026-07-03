@@ -87,7 +87,7 @@ wH = 600
 window = game.display.set_mode((wW, wH))
 game.display.set_caption("Simulador de física.")
 clock = game.time.Clock()
-fps = 60
+fps = 120
 meter = 100
 running = False
 ground_ypos = wH - 70
@@ -103,16 +103,16 @@ play_button_text = t.makeText("Play", 30, (wW - 140, 150), "black", window)
 pause_button = b.makeButtons("jogo-de-fisica/sprites/buttons/pause.png", (wW - 60, 100), window,2)
 pause_button_text = t.makeText("Pause", 30, (wW - 60, 150), "black", window)
 time_text = t.makeText("0s", 40, (wW - 140, 180), "black", window)
-equation_text = t.makeText("0 + 1t + 0t²", 20, (wW/2 + 15, 120), "blue", window)
-perDist_text = t.makeText("Dist. pecorrida: 0m", 20, (wW/2 + 15, 150), "red", window)
-perTime_text = t.makeText("Tempo pecorrido: 0s", 20, (wW/2 + 15, 180), "red", window)
+equation_text = t.makeText("(0m) + (1m)t + (0m)t²", 20, (wW/2, 120), "blue", window)
+perDist_text = t.makeText("Dist. pecorrida: 0m", 20, (wW/2, 150), "red", window)
+perTime_text = t.makeText("Tempo pecorrido: 0s", 20, (wW/2, 180), "red", window)
 
-pos_input = input.Input((20, 100), window, "0")
-pos_input_text = t.makeText("Pos.", 30, (60, 160), "black", window)
-speed_input = input.Input((120, 100), window, "1")
-speed_input_text = t.makeText("Vel.", 30, (160, 160), "black", window)
-acceleration_input = input.Input((220, 100), window, "0")
-acceleration_input_text = t.makeText("Ace.", 30, (260, 160), "black", window)
+pos_input = input.Input((180, 80), window, "0")
+pos_input_text = t.makeText("Posição", 30, (60, 80), "black", window)
+speed_input = input.Input((180, 120), window, "1")
+speed_input_text = t.makeText("Vel.", 30, (60, 120), "black", window)
+acceleration_input = input.Input((180, 160), window, "0")
+acceleration_input_text = t.makeText("Ace.", 30, (60, 160), "black", window)
 time = 0
 
 
@@ -126,13 +126,13 @@ while True:
             player.sprite.distance = float(pos_input.text)*meter
             player.sprite.speed = float(speed_input.text)*meter
             player.sprite.acceleration = float(acceleration_input.text)*meter
-            equation_text.updateText(f"{convertUnits(float(pos_input.text))} + {convertUnits(float(speed_input.text))}t + {convertUnits(float(acceleration_input.text)/2)}t²")
+            equation_text.updateText(f"({convertUnits(float(pos_input.text))}) + ({convertUnits(float(speed_input.text))})t + ({convertUnits(float(acceleration_input.text)/2)})t²")
             running = True
         if pause_button.isClicked(event) and running:
             perTime_text.updateText(f"Tempo pecorrido: {time:.2f}s")
             perDist_text.updateText(f"Dist. pecorrida: {convertUnits(abs(float(pos_input.text) - float(player.sprite.distance/meter)))}")
-            pos_input.text = str(int(player.sprite.distance/meter))[:pos_input.maxLen]
-            speed_input.text = str(int(player.sprite.speed/meter))[:speed_input.maxLen]
+            pos_input.text = str(int(player.sprite.distance/meter))
+            speed_input.text = str(int(player.sprite.speed/meter))
             time = 0
             running = False
         if restart_button.isClicked(event) and not(running):
@@ -172,10 +172,9 @@ while True:
     equation_text.showText()
     perDist_text.showText()
     
-    player.draw(window)
-    player.update(deltaTime)
     groundMove(player.sprite.distance)
     draw_meter_markers(player.sprite.distance)
-    
+    player.draw(window)
+    player.update(deltaTime)
     game.display.update()
     
