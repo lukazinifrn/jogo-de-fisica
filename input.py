@@ -4,7 +4,9 @@ class Input:
     def __init__(self, pos: tuple, surface: pygame.surface.Surface, defaultValue: str):
         self.font = pygame.font.Font(None, 24)
         self.rect = pygame.Rect(0, 0, 120, 30)
+        self.mark = pygame.Rect(0, 0, 2, 20)
         self.rect.center = pos
+        self.mark.centery = pos[1]
         self.surface = surface
         self.text = defaultValue
         self.image = self.font.render(self.text, False, "black")
@@ -12,8 +14,15 @@ class Input:
         
     def showInput(self):
         pygame.draw.rect(self.surface, "white", self.rect)
+        #pygame.draw.rect(self.surface, "black", self.mark)
         self.surface.blit(self.image, (self.rect.x + 7, self.rect.y + 7))
-        
+    
+    def showMark(self, condition):
+        textRect = self.image.get_rect(topleft = (self.rect.x + 7, self.rect.y + 7))
+        if condition and self.clicked:
+            self.mark.x = textRect.right + 1
+            pygame.draw.rect(self.surface, "black", self.mark)
+            
     def verifyInput(self) -> bool:
         valid = "1234567890"
         if self.text[0] in "-+":
@@ -73,6 +82,7 @@ if __name__ == "__main__":
                 exit()
             test.updateText(event)
         test.showInput()
+        test.showMark(True)
                 
         pygame.display.update()
     # WORKS!

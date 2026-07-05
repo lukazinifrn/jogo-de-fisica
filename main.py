@@ -8,16 +8,16 @@ class Player(game.sprite.Sprite):
     def __init__(self):
         super().__init__()
         self.framesRight = [
-            game.transform.scale_by(game.image.load("jogo-de-fisica/sprites/player/player_walk_right_0.png"),2).convert_alpha(),
-            game.transform.scale_by(game.image.load("jogo-de-fisica/sprites/player/player_walk_right_1.png"),2).convert_alpha(),
-            game.transform.scale_by(game.image.load("jogo-de-fisica/sprites/player/player_walk_right_2.png"),2).convert_alpha(),
-            game.transform.scale_by(game.image.load("jogo-de-fisica/sprites/player/player_walk_right_3.png"),2).convert_alpha()
+            game.transform.scale_by(game.image.load("./sprites/player/player_walk_right_0.png"),2).convert_alpha(),
+            game.transform.scale_by(game.image.load("./sprites/player/player_walk_right_1.png"),2).convert_alpha(),
+            game.transform.scale_by(game.image.load("./sprites/player/player_walk_right_2.png"),2).convert_alpha(),
+            game.transform.scale_by(game.image.load("./sprites/player/player_walk_right_3.png"),2).convert_alpha()
         ]
         self.framesLeft = [
-            game.transform.scale_by(game.image.load("jogo-de-fisica/sprites/player/player_walk_left_0.png"),2).convert_alpha(),
-            game.transform.scale_by(game.image.load("jogo-de-fisica/sprites/player/player_walk_left_1.png"),2).convert_alpha(),
-            game.transform.scale_by(game.image.load("jogo-de-fisica/sprites/player/player_walk_left_2.png"),2).convert_alpha(),
-            game.transform.scale_by(game.image.load("jogo-de-fisica/sprites/player/player_walk_left_3.png"),2).convert_alpha()
+            game.transform.scale_by(game.image.load("./sprites/player/player_walk_left_0.png"),2).convert_alpha(),
+            game.transform.scale_by(game.image.load("./sprites/player/player_walk_left_1.png"),2).convert_alpha(),
+            game.transform.scale_by(game.image.load("./sprites/player/player_walk_left_2.png"),2).convert_alpha(),
+            game.transform.scale_by(game.image.load("./sprites/player/player_walk_left_3.png"),2).convert_alpha()
         ]
         self.image = self.framesRight[0]
         self.frameRight = 0
@@ -67,7 +67,7 @@ def draw_meter_markers(distance):
 
 def groundMove(distance):
     for i in range(int(distance/wW)-1, 2+int(distance/wW)):
-        ground = game.image.load("jogo-de-fisica/sprites/ground.png").convert()
+        ground = game.image.load("./sprites/ground.png").convert()
         ground_rect = ground.get_rect(topleft = (wW*i-distance, ground_ypos))
         window.blit(ground, ground_rect)
 
@@ -95,12 +95,16 @@ ground_ypos = wH - 70
 player = game.sprite.GroupSingle()
 player.add(Player())
 
+MARKFLIP = game.USEREVENT + 1
+game.time.set_timer(MARKFLIP, 500)
+markflip = False
+
 title = t.makeText("Simulador de MUV", 64, (wW/2, 40), "black", window)
-restart_button = b.makeButtons("jogo-de-fisica/sprites/buttons/restart.png", (wW - 220, 100), window,2)
+restart_button = b.makeButtons("./sprites/buttons/restart.png", (wW - 220, 100), window,2)
 restart_button_text = t.makeText("Restaurar", 30, (wW - 220, 150), "black", window)
-play_button = b.makeButtons("jogo-de-fisica/sprites/buttons/play.png", (wW - 140, 100), window,2)
+play_button = b.makeButtons("./sprites/buttons/play.png", (wW - 140, 100), window,2)
 play_button_text = t.makeText("Play", 30, (wW - 140, 150), "black", window)
-pause_button = b.makeButtons("jogo-de-fisica/sprites/buttons/pause.png", (wW - 60, 100), window,2)
+pause_button = b.makeButtons("./sprites/buttons/pause.png", (wW - 60, 100), window,2)
 pause_button_text = t.makeText("Pause", 30, (wW - 60, 150), "black", window)
 time_text = t.makeText("0s", 40, (wW - 140, 180), "black", window)
 equation_text = t.makeText("(0m) + (1m)t + (0m)t²", 20, (wW/2, 120), "blue", window)
@@ -123,6 +127,9 @@ while True:
             game.quit()
             exit()
         if play_button.isClicked(event) and not(running):
+            pos_input.clicked = False
+            speed_input.clicked = False
+            acceleration_input.clicked = False
             player.sprite.distance = float(pos_input.text)*meter
             player.sprite.speed = float(speed_input.text)*meter
             player.sprite.acceleration = float(acceleration_input.text)*meter
@@ -131,8 +138,8 @@ while True:
         if pause_button.isClicked(event) and running:
             perTime_text.updateText(f"Tempo pecorrido: {time:.2f}s")
             perDist_text.updateText(f"Dist. pecorrida: {convertUnits(abs(float(pos_input.text) - float(player.sprite.distance/meter)))}")
-            pos_input.text = str(int(player.sprite.distance/meter))
-            speed_input.text = str(int(player.sprite.speed/meter))
+            pos_input.text = f"{player.sprite.distance/meter:.1f}"
+            speed_input.text = f"{player.sprite.speed/meter:.1f}"
             time = 0
             running = False
         if restart_button.isClicked(event) and not(running):
@@ -147,7 +154,8 @@ while True:
             pos_input.updateText(event)
             speed_input.updateText(event)
             acceleration_input.updateText(event)
-            
+        if event.type == MARKFLIP:
+            markflip = not markflip
     window.fill("lightblue")
     game.draw.rect(window, (255, 255, 0), (0,0,800,200))
     if running:
@@ -164,10 +172,13 @@ while True:
     time_text.showText()
     pos_input.showInput()
     pos_input_text.showText()
+    pos_input.showMark(markflip)
     speed_input.showInput()
     speed_input_text.showText()
+    speed_input.showMark(markflip)
     acceleration_input.showInput()
     acceleration_input_text.showText()
+    acceleration_input.showMark(markflip)
     perTime_text.showText()
     equation_text.showText()
     perDist_text.showText()
