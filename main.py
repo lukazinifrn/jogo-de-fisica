@@ -1,4 +1,5 @@
 import pygame as game
+from pygame.sprite import _Group
 import buttons as b
 import text as t
 import input
@@ -33,12 +34,12 @@ class Player(game.sprite.Sprite):
         self.i = True
         
     def move(self, dt):
-        if self.speed > 0 and running:
+        if self.speed > 0 and running_muv:
             self.distance += self.speed * dt
             self.toRight = True
         else:
             self.toRight = False
-        if self.speed < 0 and running:
+        if self.speed < 0 and running_muv:
             self.distance += self.speed * dt
             self.toLeft = True
         else:
@@ -59,6 +60,11 @@ class Player(game.sprite.Sprite):
         self.move(dt)
         self.animation(dt)
 
+class Object(game.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.image = game.image.load("./sprites/shapes/square.png")
+        self.rect = self.image.get_rect(midbottom = (wW/2, -100))
 # Operational functions
 def draw_meter_markers(distance):
     f = game.font.Font(None, 24)
@@ -92,7 +98,6 @@ game.display.set_caption("Simulador de física.")
 clock = game.time.Clock()
 fps = 120
 meter = 100
-running = False
 ground_ypos = wH - 70
 
 player = game.sprite.GroupSingle()
@@ -105,29 +110,31 @@ markflip = False
 
 ## Texts
 # Home
-home_title = t.makeText("Escolha o que simular", 64, (wW/2, 80), "black", window)
+home_title = t.makeText("Escolha o que simular", 80, (wW/2, 80), "black", window)
 
 # MUV 
 title = t.makeText("Simulador de MUV", 64, (wW/2, 40), "black", window)
 time_text = t.makeText("0s", 40, (wW - 140, 180), "black", window)
-equation_text = t.makeText("(0m) + (1m)t + (0m)t²", 20, (wW/2, 120), "blue", window)
+equation_text = t.makeText("(0.00m) + (1.00m)t + (0.00m)t²", 20, (wW/2, 120), "blue", window)
 perDist_text = t.makeText("Dist. pecorrida: 0m", 20, (wW/2, 150), "red", window)
 perTime_text = t.makeText("Tempo pecorrido: 0s", 20, (wW/2, 180), "red", window)
 
 ## Buttons
 # Home
-muv_button = b.makeButtons("./sprites/buttons/muv.png", (wW/2 - 150, wH/2), window, 4)
-muv_button_text = t.makeText("MUV", 36, (wW/2 - 150, wH/2 + 82), "black", window)
-ql_button = b.makeButtons("./sprites/buttons/ql.png", (wW/2 + 150, wH/2), window, 4)
-ql_button_text = t.makeText("Queda livre", 36, (wW/2 + 150, wH/2 + 82), "black", window)
+muv_button = b.makeButtons("./sprites/buttons/muv.png", (wW/2 - 150, wH/2), window, 7)
+muv_button_text = t.makeText("MUV", 48, (wW/2 - 150, wH/2 + 140), "black", window)
+ql_button = b.makeButtons("./sprites/buttons/ql.png", (wW/2 + 150, wH/2), window, 7)
+ql_button_text = t.makeText("Queda livre", 48, (wW/2 + 150, wH/2 + 140), "black", window)
 
-# MUV
+# MUV and QL
 restart_button = b.makeButtons("./sprites/buttons/restart.png", (wW - 220, 100), window,2)
 restart_button_text = t.makeText("Restaurar", 30, (wW - 220, 150), "black", window)
 play_button = b.makeButtons("./sprites/buttons/play.png", (wW - 140, 100), window,2)
 play_button_text = t.makeText("Play", 30, (wW - 140, 150), "black", window)
 pause_button = b.makeButtons("./sprites/buttons/pause.png", (wW - 60, 100), window,2)
 pause_button_text = t.makeText("Pause", 30, (wW - 60, 150), "black", window)
+exit_button = b.makeButtons("./sprites/buttons/exit.png", (25, 25), window, 1.2)
+exit_button_text = t.makeText("Sair", 20, (25, 50), "black", window)
 
 ## Input
 # MUV
@@ -144,7 +151,7 @@ time = 0
 home = True
 muv = False
 ql = False
-
+running_muv = False
 
 while True:
     # Deltatime logic
@@ -155,8 +162,15 @@ while True:
             exit()
         if event.type == MARKFLIP:
             markflip = not markflip
+        if home:
+            if muv_button.isClicked(event):
+                home = False
+                muv = True
+            if ql_button.isClicked(event):
+                home = False
+                ql = True
         if muv:
-            if play_button.isClicked(event) and not(running):
+            if play_button.isClicked(event) and not(running_muv):
                 pos_input.clicked = False
                 speed_input.clicked = False
                 acceleration_input.clicked = False
@@ -164,15 +178,16 @@ while True:
                 player.sprite.speed = float(speed_input.text)*meter
                 player.sprite.acceleration = float(acceleration_input.text)*meter
                 equation_text.updateText(f"({convertUnits(float(pos_input.text), 2)}) + ({convertUnits(float(speed_input.text), 2)})t + ({convertUnits(float(acceleration_input.text)/2, 2)})t²")
-                running = True
-            if pause_button.isClicked(event) and running:
+                running_muv = True
+            if pause_button.isClicked(event) and running_muv:
                 perTime_text.updateText(f"Tempo pecorrido: {time:.2f}s")
                 perDist_text.updateText(f"Dist. pecorrida: {convertUnits(abs(float(pos_input.text) - float(player.sprite.distance/meter)), 2)}")
                 pos_input.text = f"{player.sprite.distance/meter:.1f}"
                 speed_input.text = f"{player.sprite.speed/meter:.1f}"
                 time = 0
-                running = False
-            if restart_button.isClicked(event) and not(running):
+                running_muv = False
+            if restart_button.isClicked(event) and not(running_muv):
+                equation_text.updateText("(0.00m) + (1.00m)t + (0.00m)t²")
                 perTime_text.updateText("Tempo pecorrido: 0s")
                 perDist_text.updateText("Dist. pecorrida: 0m")
                 pos_input.text = "0"
@@ -180,11 +195,14 @@ while True:
                 acceleration_input.text = "0"
                 player.sprite.distance = 0
                 time = 0
-            if not(running):
+            if exit_button.isClicked(event) or (event.type == game.KEYDOWN and event.key == game.K_ESCAPE):
+                muv = False
+                home = True
+                
+            if not(running_muv):
                 pos_input.updateText(event)
                 speed_input.updateText(event)
                 acceleration_input.updateText(event)
-    
     if home:
         window.fill("yellow")
 
@@ -195,12 +213,14 @@ while True:
         ql_button_text.showText()
 
     if muv:
-        if running:
+        if running_muv:
             time += deltaTime
         time_text.updateText(f"{time:.3f}s")
         window.fill("lightblue")
         game.draw.rect(window, (255, 255, 0), (0,0,800,200))
         title.showText()
+        exit_button.showButton()
+        exit_button_text.showText()
         restart_button.showButton()
         restart_button_text.showText()
         pause_button.showButton()
@@ -225,5 +245,8 @@ while True:
         draw_meter_markers(player.sprite.distance)
         player.draw(window)
         player.update(deltaTime)
+    
+    if ql:
+        window.fill("lightblue")
     game.display.update()
     
