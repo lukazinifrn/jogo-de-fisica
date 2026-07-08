@@ -1,5 +1,4 @@
 import pygame as game
-from pygame.sprite import _Group
 import buttons as b
 import text as t
 import input
@@ -64,7 +63,31 @@ class Object(game.sprite.Sprite):
     def __init__(self):
         super().__init__()
         self.image = game.image.load("./sprites/shapes/square.png")
-        self.rect = self.image.get_rect(midbottom = (wW/2, -100))
+        self.rect = self.image.get_rect(midbottom = (wW/2-100, wH/2))
+        self.speed = 0
+        self.area = 1000
+        self.acceleration = 10*meter
+        self.distance = 0
+    def move(self, dt):
+        global running_ql
+        if running_ql:
+            self.distance -= self.speed * dt
+            self.speed += self.acceleration * dt
+        if self.distance <= 0:
+            self.distance = 0
+            self.speed = 0
+            running_ql = False
+    def changeShape(self):
+        if square: 
+            self.image = game.image.load("./sprites/shapes/square.png")
+        if triangle:
+            self.image = game.image.load("./sprites/shapes/triangle.png")
+        if circle:
+            self.image = game.image.load("./sprites/shapes/circle.png")
+    def update(self, dt):
+        self.move(dt)
+        self.changeShape()
+        
 # Operational functions
 def draw_meter_markers(distance):
     f = game.font.Font(None, 24)
@@ -73,12 +96,21 @@ def draw_meter_markers(distance):
         text_rect = text.get_rect(midtop = (wW/2 + meter*i - distance, ground_ypos + 25))
         game.draw.rect(window, "black", (wW/2 + meter*i - distance, ground_ypos, 3, 20))
         window.blit(text, text_rect)
-
+def draw_meter_markers_ql(distance):
+    f = game.font.Font(None, 24)
+    for i in range(int(distance/meter)-5, int(distance/meter)+5):
+        if i >= 0:
+            text = f.render(convertUnits(i, 3), False, "black").convert()
+            text_rect = text.get_rect(midtop = (80, wH/2 - meter*i + distance))
+            game.draw.rect(window, "black", (140, wH/2 - meter*i + distance, 20, 3))
+            window.blit(text, text_rect)
 def groundMove(distance):
     for i in range(int(distance/wW)-1, 2+int(distance/wW)):
         ground = game.image.load("./sprites/ground.png").convert()
         ground_rect = ground.get_rect(topleft = (wW*i-distance, ground_ypos))
         window.blit(ground, ground_rect)
+def groundMove_ql(distance):
+    ql_ground_rect.top = wH/2 + distance
 
 def convertUnits(num, d):
     if num >= 1000000000:
@@ -99,9 +131,14 @@ clock = game.time.Clock()
 fps = 120
 meter = 100
 ground_ypos = wH - 70
+ql_ground = game.image.load("./sprites/full_ground.png").convert()
+ql_ground_rect = ql_ground.get_rect(topleft = (0, wH/2))
 
 player = game.sprite.GroupSingle()
 player.add(Player())
+
+object = game.sprite.GroupSingle()
+object.add(Object())
 
 # Input mark animation
 MARKFLIP = game.USEREVENT + 1
@@ -114,10 +151,14 @@ home_title = t.makeText("Escolha o que simular", 80, (wW/2, 80), "black", window
 
 # MUV 
 title = t.makeText("Simulador de MUV", 64, (wW/2, 40), "black", window)
-time_text = t.makeText("0s", 40, (wW - 140, 180), "black", window)
+time_text = t.makeText("0.000s", 40, (wW - 140, 180), "black", window)
 equation_text = t.makeText("(0.00m) + (1.00m)t + (0.00m)t²", 20, (wW/2, 120), "blue", window)
 perDist_text = t.makeText("Dist. pecorrida: 0m", 20, (wW/2, 150), "red", window)
 perTime_text = t.makeText("Tempo pecorrido: 0s", 20, (wW/2, 180), "red", window)
+
+# QL
+ql_title = t.makeText("Simulador de queda livre", 64, (wW/2, wH - 40), "black", window)
+time_ql_text = t.makeText("0.000s", 40, (wW - 100, 480), "black", window)
 
 ## Buttons
 # Home
@@ -136,6 +177,10 @@ pause_button_text = t.makeText("Pause", 30, (wW - 60, 150), "black", window)
 exit_button = b.makeButtons("./sprites/buttons/exit.png", (25, 25), window, 1.2)
 exit_button_text = t.makeText("Sair", 20, (25, 50), "black", window)
 
+# QL
+change_shape = b.makeButtons("./sprites/buttons/change_shape.png", (wW - 100, 300), window,2)
+change_shape_text = t.makeText("Mudar Forma", 30, (wW - 100, 350), "black", window)
+
 ## Input
 # MUV
 pos_input = input.Input((180, 80), window, "0")
@@ -145,13 +190,24 @@ speed_input_text = t.makeText("Vel.", 30, (60, 120), "black", window)
 acceleration_input = input.Input((180, 160), window, "0")
 acceleration_input_text = t.makeText("Ace.", 30, (60, 160), "black", window)
 
+# QL
+height_input = input.Input((wW - 100, 400), window, "1")
+height_input_text = t.makeText("Altura", 30, (wW - 100, 430), "black", window)
+
 time = 0
+time_ql = 0
+
+# Shapes States
+square = True
+triangle = False
+circle = False
 
 # Gamestates
 home = True
 muv = False
 ql = False
 running_muv = False
+running_ql = False
 
 while True:
     # Deltatime logic
@@ -203,9 +259,39 @@ while True:
                 pos_input.updateText(event)
                 speed_input.updateText(event)
                 acceleration_input.updateText(event)
+        if ql:
+            if exit_button.isClicked(event):
+                ql = False
+                home = True
+            if play_button.isClicked(event) and not(running_ql):
+                running_ql = True
+                height_input.clicked = False
+                object.sprite.distance = float(height_input.text)*meter
+                time_ql = 0
+            if pause_button.isClicked(event):
+                running_ql = False
+                height_input.text = f"{object.sprite.distance/meter:.1f}"
+            if restart_button.isClicked(event) and not(running_ql):
+                object.sprite.distance = 100
+                object.sprite.speed = 0
+                height_input.text = "1"
+                time_ql = 0
+            if change_shape.isClicked(event) and not(running_ql):
+                if square:
+                    square = False
+                    triangle = True
+                elif triangle:
+                    triangle = False
+                    circle = True
+                else:
+                    circle = False
+                    square = True
+            if not(running_ql):
+                height_input.updateText(event)
+
+                    
     if home:
         window.fill("yellow")
-
         home_title.showText()
         muv_button.showButton()
         muv_button_text.showText()
@@ -221,6 +307,8 @@ while True:
         title.showText()
         exit_button.showButton()
         exit_button_text.showText()
+        restart_button.rect.center = (wW - 220, 100)
+        restart_button_text.rect.center = (wW - 220, 150)
         restart_button.showButton()
         restart_button_text.showText()
         pause_button.showButton()
@@ -247,6 +335,37 @@ while True:
         player.update(deltaTime)
     
     if ql:
+        if running_ql:
+            time_ql += deltaTime
         window.fill("lightblue")
+        game.draw.rect(window, (255, 255, 0), (600,0,200,600))
+        window.blit(ql_ground, ql_ground_rect)
+        
+        exit_button.showButton()
+        exit_button_text.showText()
+        
+        draw_meter_markers_ql(object.sprite.distance)
+        groundMove_ql(object.sprite.distance)
+        time_ql_text.showText()
+        time_ql_text.updateText(f"{time_ql:.3f}s")
+        object.draw(window)
+        object.update(deltaTime)
+        play_button.showButton()
+        play_button_text.showText()
+        pause_button.showButton()
+        pause_button_text.showText()
+        restart_button.rect.center = (wW - 100, 200)
+        restart_button_text.rect.center = (wW - 100, 250)
+        restart_button.showButton()
+        restart_button_text.showText()
+        change_shape.showButton()
+        change_shape_text.showText()
+        
+        height_input.showInput()
+        height_input_text.showText()
+        height_input.showMark(markflip)
+        
+        game.draw.rect(window, (255, 255, 0), (0,wH - 80,600,200))
+        ql_title.showText()
     game.display.update()
     
